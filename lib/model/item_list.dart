@@ -1,3 +1,5 @@
+// ignore_for_file: no_leading_underscores_for_local_identifiers
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:proyek_todolist_firebase/model/todo.dart';
@@ -5,6 +7,7 @@ import 'package:proyek_todolist_firebase/model/todo.dart';
 class ItemList extends StatelessWidget {
   final String transaksiDocId;
   final Todo todo;
+
   const ItemList({super.key, required this.todo, required this.transaksiDocId});
 
   @override
@@ -54,18 +57,24 @@ class ItemList extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    todo.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      todo.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis, // Add overflow handling
                     ),
                   ),
                   const SizedBox(height: 15),
-                  Text(
-                    todo.description,
-                    style: const TextStyle(
-                      fontSize: 16,
+                  Flexible(
+                    child: Text(
+                      todo.description,
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis, // Add overflow handling
                     ),
                   ),
                 ],
@@ -94,33 +103,6 @@ class ItemList extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class ChecklistButton extends StatefulWidget {
-  const ChecklistButton({super.key});
-
-  @override
-  State<ChecklistButton> createState() => _ChecklistButtonState();
-}
-
-class _ChecklistButtonState extends State<ChecklistButton> {
-  bool isChecked = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
-        isChecked ? Icons.check_box : Icons.check_box_outline_blank,
-        color: isChecked ? Colors.blue : Colors.grey,
-        size: 25,
-      ),
-      onPressed: () {
-        setState(() {
-          isChecked = !isChecked;
-        });
-      },
     );
   }
 }

@@ -15,13 +15,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  FirebaseAuth _auth = FirebaseAuth.instance;
-  FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late CollectionReference todoCollection;
 
-  TextEditingController _titleController = TextEditingController();
-  TextEditingController _descriptionController = TextEditingController();
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   bool isComplete = false;
 
   @override
@@ -33,17 +33,28 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _signOut() async {
     await _auth.signOut();
-    runApp(new MaterialApp(
-      home: new LoginPage(),
+    runApp(const MaterialApp(
+      home: LoginPage(),
     ));
   }
 
   Future<QuerySnapshot>? searchResultsFuture;
   Future<void> searchResult(String textEntered) async {
+    if (textEntered.isEmpty) {
+      // If search text is empty, clear search results and return all documents
+      setState(() {
+        searchResultsFuture = null;
+      });
+      return;
+    }
+
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection("Todos")
+        .where("uid", isEqualTo: _auth.currentUser!.uid)
         .where("title", isGreaterThanOrEqualTo: textEntered)
-        .where("title", isLessThan: textEntered + 'z')
+        .where("title",
+            isLessThanOrEqualTo:
+                '$textEntered\uf8ff') // Ensure the query matches the entered text
         .get();
 
     setState(() {
@@ -62,7 +73,7 @@ class _HomePageState extends State<HomePage> {
       'description': _descriptionController.text,
       'isComplete': isComplete,
       'uid': _auth.currentUser!.uid,
-    // ignore: invalid_return_type_for_catch_error
+      // ignore: invalid_return_type_for_catch_error
     }).catchError((error) => print('Failed to add todo: $error'));
   }
 
@@ -80,8 +91,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-// In build method, you can use the existing todoCollection
-
   @override
   Widget build(BuildContext context) {
     _firestore.collection('Todos');
@@ -90,29 +99,29 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Todo List'),
+        title: const Text('Todo List'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('Logout'),
-                  content: Text('Apakah anda yakin ingin logout?'),
+                  title: const Text('Logout'),
+                  content: const Text('Apakah anda yakin ingin logout?'),
                   actions: [
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Text('Tidak'),
+                      child: const Text('Tidak'),
                     ),
                     TextButton(
                       onPressed: () {
                         _signOut();
                       },
-                      child: Text('Ya'),
+                      child: const Text('Ya'),
                     ),
                   ],
                 ),
@@ -124,18 +133,15 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
             child: TextField(
-              decoration: InputDecoration(
+              controller: _searchController,
+              decoration: const InputDecoration(
                   labelText: 'Search',
                   prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder()),
               onChanged: (textEntered) {
                 searchResult(textEntered);
-
-                setState(() {
-                  _searchController.text = textEntered;
-                });
               },
             ),
           ),
@@ -150,10 +156,10 @@ class _HomePageState extends State<HomePage> {
                         ? searchResultsFuture!
                             .asStream()
                             .cast<QuerySnapshot<Map<String, dynamic>>>()
-                        : Stream.empty(),
+                        : const Stream.empty(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
                   }
                   List<Todo> listTodo = snapshot.data!.docs.map((document) {
                     final data = document.data();
@@ -168,15 +174,18 @@ class _HomePageState extends State<HomePage> {
                         isComplete: isComplete,
                         uid: uid);
                   }).toList();
-                  return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: listTodo.length,
-                      itemBuilder: (context, index) {
-                        return ItemList(
-                          todo: listTodo[index],
-                          transaksiDocId: snapshot.data!.docs[index].id,
-                        );
-                      });
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: listTodo.length,
+                        itemBuilder: (context, index) {
+                          return ItemList(
+                            todo: listTodo[index],
+                            transaksiDocId: snapshot.data!.docs[index].id,
+                          );
+                        }),
+                  );
                 }),
           ),
         ],
@@ -186,30 +195,32 @@ class _HomePageState extends State<HomePage> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('Tambah Todo'),
+              title: const Text('Tambah Todo'),
               content: SizedBox(
                 width: 200,
                 height: 100,
                 child: Column(
+                  mainAxisSize: MainAxisSize.min, // Adjust to avoid overflow
                   children: [
                     TextField(
                       controller: _titleController,
-                      decoration: InputDecoration(hintText: 'Judul todo'),
+                      decoration: const InputDecoration(hintText: 'Judul todo'),
                     ),
                     TextField(
                       controller: _descriptionController,
-                      decoration: InputDecoration(hintText: 'Deskripsi todo'),
+                      decoration:
+                          const InputDecoration(hintText: 'Deskripsi todo'),
                     ),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
-                  child: Text('Batalkan'),
+                  child: const Text('Batalkan'),
                   onPressed: () => Navigator.pop(context),
                 ),
                 TextButton(
-                  child: Text('Tambah'),
+                  child: const Text('Tambah'),
                   onPressed: () {
                     addTodo();
                     cleartext();
@@ -220,7 +231,7 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
